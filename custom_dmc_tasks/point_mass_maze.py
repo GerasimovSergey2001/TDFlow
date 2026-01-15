@@ -172,12 +172,26 @@ class MultiTaskPointMassMaze(base.Task):
 
     def get_reward(self, physics):
         """Returns a reward to the agent."""
-        target_size = .015
-        control_reward = rewards.tolerance(physics.control(), margin=1,
-                                       value_at_margin=0,
-                                       sigmoid='quadratic').mean()
-        small_control = (control_reward + 4) / 5
-        near_target = rewards.tolerance(physics.mass_to_target_dist(self._target),
-                                bounds=(0, target_size), margin=target_size)
-        reward = near_target * small_control
-        return reward
+        # target_size = .015
+        # control_reward = rewards.tolerance(physics.control(), margin=1,
+        #                                value_at_margin=0,
+        #                                sigmoid='quadratic').mean()
+        # small_control = (control_reward + 4) / 5
+        # near_target = rewards.tolerance(physics.mass_to_target_dist(self._target),
+        #                         bounds=(0, target_size), margin=target_size)
+        # reward = near_target * small_control
+        # return reward
+
+        dist = physics.mass_to_target_dist(self._target)
+        reaching = rewards.tolerance(dist,
+                                    bounds=(0, 0.015),
+                                    margin=0.4,
+                                    sigmoid='long_tail') 
+
+        control = rewards.tolerance(physics.control(),
+                                    bounds=(0, 0.1),
+                                    margin=1.0,
+                                    value_at_margin=0,
+                                    sigmoid='quadratic').mean()
+        
+        return reaching * (4 + control) / 5
