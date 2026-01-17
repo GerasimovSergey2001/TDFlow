@@ -87,7 +87,7 @@ class TDFlowTrainer:
 
             if epoch % 5 == 0:
                 torch.save(self.fm.model.state_dict(), f'checkpoints/td2_cfm_model_{self.task}_epoch_{epoch}.pth')
-                torch.save(self.fm_target.model.state_dict(), f'checkpoints/td2_cfm_targett_model_{self.task}_epoch_{epoch}.pth')
+                torch.save(self.fm_target.model.state_dict(), f'checkpoints/td2_cfm_target_model_{self.task}_epoch_{epoch}.pth')
 
     def second_term_criterion(self, fm, target, t, x, cond):
         v = fm.velocity(t, x, cond)
