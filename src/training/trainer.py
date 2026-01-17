@@ -31,12 +31,15 @@ class TDFlowTrainer:
         self.gamma, self.ema = gamma, ema
         self.batch_size = self.train_loader.batch_size
         self.task = task
-        wandb.init(project=project_name, mode="online", config={
-            "gamma": gamma,
-            "ema": ema,
-            "optimizer": "AdamW",
-            **optimizer_config
-        })
+        self.run = wandb.init(project=project_name,
+                   mode="online", 
+                   reinit=True,
+                   settings=wandb.Settings(start_method="thread"),
+                   config={
+                    "gamma": gamma,
+                    "ema": ema,
+                    "optimizer": "AdamW",
+                    **optimizer_config})
     
     def fit(self, num_epochs=500):
         self.global_step = 0

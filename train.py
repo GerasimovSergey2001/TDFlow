@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 
 import argparse
 from copy import deepcopy
+import wandb
 
 from src.model.flow_matching import ConditionalFlowMatching
 from src.model.base_models.unet_mlp import TDFlowUnet
@@ -35,7 +36,10 @@ def main(task = 'reach_top_left', num_epochs=100):
         device='auto',
         task=task
     )
-    trainer.fit(num_epochs)
+    try:
+        trainer.fit(num_epochs)
+    finally:
+        wandb.finish()
     torch.save(trainer.fm.model.state_dict(), f'checkpoints/td2_cfm_model_{task}.pth')
     torch.save(trainer.fm.model.state_dict(), f'checkpoints/td2_cfm_target_model_{task}.pth')
 
