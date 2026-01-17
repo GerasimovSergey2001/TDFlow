@@ -58,7 +58,7 @@ class TDFlowTrainer:
                 x_target = self.fm_target.sample(s.shape[0], cond_next, t_batch)
                 velocity_target = self.fm_target.velocity(t_batch, x_target, cond_next)
 
-                l1 = self.fm.criterion(t_batch, x0, s, cond)    
+                l1 = self.fm.criterion(t_batch, x0, s_next, cond)    
                 l2 = self.second_term_criterion(self.fm, velocity_target, t_batch, x_target, cond)
                 loss = (1-self.gamma)*l1 + self.gamma*l2
                 
