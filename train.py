@@ -14,7 +14,7 @@ from src.datasets import PointMassMazeDataset
 
 def main(task = 'reach_top_left', num_epochs=100):
     dataset = PointMassMazeDataset(task=task)
-    train_loader = DataLoader(dataset=dataset, batch_size=1024, shuffle=True)
+    train_loader = DataLoader(dataset=dataset, batch_size=1024, shuffle=True, drop_last=True)
     gamma = 0.99
     # num_epochs = 500
     ema = 1e-3
