@@ -198,15 +198,24 @@ class ConditionalFlowMatching(nn.Module):
        target = self.target_velocity(t, x0, x1)
        dim = tuple(torch.arange(1, len(x0.shape)))
        return torch.mean((v - target).pow(2).sum(dim=dim))
-    
-    def sample(self, n_samples, cond=None, t=1, method='dopri5', rtol=1e-5, atol=1e-5):
+
+
+    def sample(self, n_samples, cond=None, t_batch=None, method='midpoint', rtol=1e-5, atol=1e-5, steps=10):
         self.device = next(self.parameters()).device
         x0 = torch.randn([n_samples]+list(self.obs_dim), device=self.device)
-        t = torch.linspace(0, t, 2, device=self.device)
+        t_grid = torch.linspace(0, 1, steps + 1, device=self.device)
+        if t_batch is None:
+            t_batch = torch.tensor(1.0).repeat(n_samples)
+        elif isinstance(t_batch, int) or isinstance(t_batch, float):
+            t_batch = torch.tensor(float(t_batch)).repeat(n_samples)
+        elif isinstance(t_batch, torch.Tensor) and len(t_batch.shape)==0:
+            t_batch = t_batch.repeat(n_samples)
+
+
         with torch.no_grad():
             return odeint(
-                lambda t, x0: self.model(t, x0, cond), 
-                x0, t, 
+                lambda t, x0: self.model(t*t_batch, x0, cond)*t_batch.view(-1, 1), 
+                x0, t_grid, 
                 rtol=rtol, 
                 atol=atol, 
                 method=method, 
@@ -230,13 +239,13 @@ class ConditionalFlowMatching(nn.Module):
         return ((-v).detach(), torch.zeros_like(cond), mean_div)
         
 
-    def approx_div(self, f_x, x, retain_graph=True):  # доделать позже
+    def approx_div(self, f_x, x, retain_graph=True): 
         z = torch.randint(low=0, high=2, size=x.shape).to(x) * 2 - 1
         e_dzdx = torch.autograd.grad(f_x, x, z, create_graph=True, retain_graph=retain_graph)[0]
         return (e_dzdx*z).view(z.shape[0], -1).sum(dim=1)
 
         
-    def logp(self, x1, cond=None, n_samples=50, rtol=1e-05, atol=1e-05): # доделать позже
+    def logp(self, x1, cond=None, n_samples=50, rtol=1e-05, atol=1e-05): 
         self.device = next(self.parameters()).device
         self.n_samples = n_samples
         t = torch.linspace(0, 1, 2, device=self.device )
@@ -267,6 +276,14 @@ class ConditionalFlowMatching(nn.Module):
         logp_noise = -0.5 * (phi.pow(2).sum(1) + phi.shape[1] * torch.log(torch.tensor(2 * torch.pi)))
         return logp_noise - f
     
+    def freeze_model(self):
+        self.model.eval()
+        for param in self.model.parameters():
+            param.requires_grad = False
+    
+    def load_state_dict(self, state_dict):
+        return self.model.load_state_dict(state_dict)
+
     def __str__(self):
         """
         Model prints with the number of parameters.

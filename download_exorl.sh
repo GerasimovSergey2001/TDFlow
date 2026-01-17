@@ -1,8 +1,8 @@
 #!/bin/bash
 
 S3_URL=https://dl.fbaipublicfiles.com/exorl
-DOMAIN=${1:-walker}
-ALGO=${2:-proto}
+DOMAIN=${1:-point_mass_maze}
+ALGO=${2:-rnd}
 
 DIR=./data/${DOMAIN}
 mkdir -p ${DIR}/${ALGO}
