@@ -1,15 +1,19 @@
 import torch
 import numpy as np
 from stable_baselines3 import TD3
-from collections import OrderedDict
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
 
 class PointMassMazeDataset(Dataset):
 
-    def __init__(self, file_path='data/point_mass_maze/rnd/buffer/', task='reach_top_left'):
+    def __init__(self, file_path='data/point_mass_maze/rnd/buffer/', task='reach_top_left', device='auto'):
         self.task = task
+
+        if device == 'auto':
+            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        else:
+            self.device = device
         model_path = f'td3_point_mass_expert_{task}'
         model =  TD3.load(model_path)
         self.policy = self.configure_policy(model)
@@ -18,7 +22,7 @@ class PointMassMazeDataset(Dataset):
         self.a = []
         self.s_next = []
         self.a_next = []
-        for i in tqdm(range(0, 10_000)):
+        for i in tqdm(range(0, 10_000), desc="Dataset Processing"):
             idx = f"{i}"
             while len(idx)<6:
                 idx = '0'+idx
@@ -34,12 +38,22 @@ class PointMassMazeDataset(Dataset):
         self.a_next = torch.from_numpy(np.concat(self.a_next)).to(torch.float32)
 
     def configure_policy(self, model):
+        model.policy.to(self.device)
+        model.policy.set_training_mode(False)
+
         def policy(s):
-            obs = OrderedDict()
-            obs['position'] = s[:, :2]
-            obs['velocity'] = s[:, 2:]
-            obs_next, _ = model.predict(obs, deterministic=True)
-            return obs_next
+            obs_tensor = torch.as_tensor(s, device=self.device, dtype=torch.float32)
+            obs_dict = {
+                'position': obs_tensor[:, :2],
+                'velocity': obs_tensor[:, 2:]
+            }
+
+            with torch.no_grad():
+
+                actions = model.policy.actor(obs_dict)
+            
+            return actions.cpu().numpy()
+            
         return policy
     
     def __len__(self):
