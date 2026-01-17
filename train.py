@@ -32,10 +32,12 @@ def main(task = 'reach_top_left', num_epochs=100):
         optimizer_config=optimizer_config,
         gamma=gamma,
         ema=ema,
-        device='auto'
+        device='auto',
+        task=task
     )
     trainer.fit(num_epochs)
-    torch.save(trainer.fm.model.state_dict(), f'td2_cfm_model_{task}.pth')
+    torch.save(trainer.fm.model.state_dict(), f'checkpoints/td2_cfm_model_{task}.pth')
+    torch.save(trainer.fm.model.state_dict(), f'checkpoints/td2_cfm_target_model_{task}.pth')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

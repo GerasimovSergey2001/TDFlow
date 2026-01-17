@@ -13,7 +13,8 @@ class TDFlowTrainer:
                  gamma, 
                  ema,
                  project_name="TDFlow-Project",
-                 device = 'auto'
+                 device = 'auto',
+                 task = 'reach_top_left'
                  ):
         
         if device=='auto':
@@ -29,7 +30,7 @@ class TDFlowTrainer:
         self.project_name = project_name    
         self.gamma, self.ema = gamma, ema
         self.batch_size = self.train_loader.batch_size
-
+        self.task = task
         wandb.init(project=project_name, config={
             "gamma": gamma,
             "ema": ema,
@@ -81,7 +82,8 @@ class TDFlowTrainer:
                 "global_step": self.global_step
                 }, 
                 step=self.global_step)
-
+            torch.save(self.fm.model.state_dict(), f'checkpoints/td2_cfm_model_{self.task}_epoch_{epoch}.pth')
+            torch.save(self.fm_target.model.state_dict(), f'checkpoints/td2_cfm_targett_model_{self.task}_epoch_{epoch}.pth')
     def second_term_criterion(self, fm, target, t, x, cond):
         v = fm.velocity(t, x, cond)
         dim = tuple(torch.arange(1, len(x.shape)))
