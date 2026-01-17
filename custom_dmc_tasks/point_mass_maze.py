@@ -139,6 +139,20 @@ class MultiTaskPointMassMaze(base.Task):
     """
         self._target = TASKS[target_id][1]
         super().__init__(random=random)
+    
+    def set_state(self, physics, state):
+        """
+        Устанавливает позицию и скорость агента вручную.
+        state: np.array([x, y, vx, vy])
+        """
+        with physics.reset_context():
+            # Устанавливаем координаты (qpos)
+            physics.data.qpos[:2] = state[:2]
+            # Устанавливаем скорости (qvel)
+            physics.data.qvel[:2] = state[2:]
+            
+        # Возвращаем обновленное наблюдение, чтобы модель знала, где она
+        return self.get_observation(physics)
 
     def initialize_episode(self, physics):
         """Sets the state of the environment at the start of each episode.
