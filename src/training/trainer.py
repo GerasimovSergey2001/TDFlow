@@ -49,10 +49,10 @@ class TDFlowTrainer:
                 cond = torch.cat([s, a], dim=-1)
                 cond_next = torch.cat([s_next, a_next], dim=-1)
 
-                t_batch = torch.rand(self.batch_size, device=self.device)
-                x0 = torch.randn((self.batch_size, s.shape[1]), device=self.device)
+                t_batch = torch.rand(s.shape[0], device=self.device)
+                x0 = torch.randn(s.shape, device=self.device)
 
-                x_target = self.fm_target.sample(self.batch_size, cond_next, t_batch)
+                x_target = self.fm_target.sample(s.shape[0], cond_next, t_batch)
                 velocity_target = self.fm_target.velocity(t_batch, x_target, cond_next)
 
                 l1 = self.fm.criterion(t_batch, x0, s, cond)    
