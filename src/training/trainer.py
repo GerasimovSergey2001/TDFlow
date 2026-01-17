@@ -31,7 +31,7 @@ class TDFlowTrainer:
         self.gamma, self.ema = gamma, ema
         self.batch_size = self.train_loader.batch_size
         self.task = task
-        wandb.init(project=project_name, config={
+        wandb.init(project=project_name, mode="online", config={
             "gamma": gamma,
             "ema": ema,
             "optimizer": "AdamW",
@@ -68,22 +68,24 @@ class TDFlowTrainer:
                 epoch_l1 += l1.item()
                 epoch_l2 += l2.item()
                 epoch_loss += loss.item()
+
+                wandb.log({
+                    "train/loss": loss.item(),
+                    "train/l1_flow_matching": l1.item(),
+                    "train/l2_bootstrap": l2.item(),
+                    "train/global_step": self.global_step,
+                    "train/epoch": epoch
+                })
                 
                 pbar.set_postfix({"loss": loss.item()})
 
-                avg_loss = epoch_loss / len(self.train_loader)
-                pbar.set_postfix({"loss": loss.item(), "step": self.global_step})
+            avg_loss = epoch_loss / len(self.train_loader)
+            pbar.set_postfix({"loss": loss.item(), "step": self.global_step})
 
-            wandb.log({
-                "epoch": epoch,
-                "l1_flow_matching": epoch_l1 / len(self.train_loader),
-                "l2_bootstrap": epoch_l2 / len(self.train_loader),
-                "total_loss": avg_loss,
-                "global_step": self.global_step
-                }, 
-                step=self.global_step)
-            torch.save(self.fm.model.state_dict(), f'checkpoints/td2_cfm_model_{self.task}_epoch_{epoch}.pth')
-            torch.save(self.fm_target.model.state_dict(), f'checkpoints/td2_cfm_targett_model_{self.task}_epoch_{epoch}.pth')
+            if epoch % 5 == 0:
+                torch.save(self.fm.model.state_dict(), f'checkpoints/td2_cfm_model_{self.task}_epoch_{epoch}.pth')
+                torch.save(self.fm_target.model.state_dict(), f'checkpoints/td2_cfm_targett_model_{self.task}_epoch_{epoch}.pth')
+
     def second_term_criterion(self, fm, target, t, x, cond):
         v = fm.velocity(t, x, cond)
         dim = tuple(torch.arange(1, len(x.shape)))
