@@ -64,7 +64,7 @@ class TDFlowTrainer:
                     x_target = self.fm_target.sample(s.shape[0], cond_next, t_batch)
                     velocity_target = self.fm_target.velocity(t_batch, x_target, cond_next)
                 else:
-                    x1 = self.fm_target.sample(s.shape[0], cond_next, 1.0)
+                    x1 = self.fm_target.sample(s.shape[0], cond_next, torch.ones(s.shape[0], device=self.device))
                     x_target = self.fm_target.conditional_flow(t_batch, x0=torch.randn(s.shape, device=self.device), x1=x1)
                     velocity_target = self.fm_target.conditional_velocity(t_batch, x_target, x1)
                 l2 = self.second_term_criterion(self.fm, velocity_target, t_batch, x_target, cond)
