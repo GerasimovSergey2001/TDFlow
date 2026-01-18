@@ -244,11 +244,11 @@ class ConditionalFlowMatching(nn.Module):
         e_dzdx = torch.autograd.grad(f_x, x, z, create_graph=True, retain_graph=retain_graph)[0]
         return (e_dzdx*z).view(z.shape[0], -1).sum(dim=1)
 
-        
-    def logp(self, x1, cond=None, n_samples=50, rtol=1e-05, atol=1e-05): 
+
+    def logp(self, x1, cond=None, n_samples=50, rtol=1e-05, atol=1e-05, steps=10, method='midpoint'): 
         self.device = next(self.parameters()).device
         self.n_samples = n_samples
-        t = torch.linspace(0, 1, 2, device=self.device )
+        t = torch.linspace(0, 1, steps+1, device=self.device )
         f0 = torch.zeros((x1.shape[0], 1), device=self.device)
 
         def reversed_velocity_with_div(t, state):
@@ -270,6 +270,7 @@ class ConditionalFlowMatching(nn.Module):
             t, 
             rtol=rtol,
             atol=atol,
+            method=method,
             adjoint_params = self.model.parameters(),
             )
         phi, f = phi[-1].detach().cpu(), f[-1].detach().cpu().flatten()
