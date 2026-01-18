@@ -14,7 +14,8 @@ class TDFlowTrainer:
                  ema,
                  project_name="TDFlow-Project",
                  device = 'auto',
-                 task = 'reach_top_left'
+                 task = 'reach_top_left',
+                 loss_type = 'td2_cfm'
                  ):
         
         if device=='auto':
@@ -31,6 +32,7 @@ class TDFlowTrainer:
         self.gamma, self.ema = gamma, ema
         self.batch_size = self.train_loader.batch_size
         self.task = task
+        self.loss_type = loss_type
         self.run = wandb.init(project=project_name,
                    mode="online", 
                    reinit=True,
@@ -39,6 +41,7 @@ class TDFlowTrainer:
                     "gamma": gamma,
                     "ema": ema,
                     "optimizer": "AdamW",
+                    "loss_type": loss_type,
                     **optimizer_config})
     
     def fit(self, num_epochs=500):
@@ -55,12 +58,19 @@ class TDFlowTrainer:
                 t_batch = torch.rand(s.shape[0], device=self.device)
                 x0 = torch.randn(s.shape, device=self.device)
 
-                x_target = self.fm_target.sample(s.shape[0], cond_next, t_batch)
-                velocity_target = self.fm_target.velocity(t_batch, x_target, cond_next)
-
-                l1 = self.fm.criterion(t_batch, x0, s_next, cond)    
+                l1 = self.fm.criterion(t_batch, x0, s_next, cond)
+                
+                if self.loss_type == 'td2_cfm':
+                    x_target = self.fm_target.sample(s.shape[0], cond_next, t_batch)
+                    velocity_target = self.fm_target.velocity(t_batch, x_target, cond_next)
+                else:
+                    x1 = self.fm_target.sample(s.shape[0], cond_next, 1.0)
+                    x_target = self.fm_target.conditional_flow(t_batch, x0=torch.randn(s.shape, device=self.device), x1=x1)
+                    velocity_target = self.fm_target.conditional_velocity(t_batch, x_target, x1)
                 l2 = self.second_term_criterion(self.fm, velocity_target, t_batch, x_target, cond)
+
                 loss = (1-self.gamma)*l1 + self.gamma*l2
+
                 
                 self.optimizer.zero_grad()
                 loss.backward()
@@ -86,8 +96,8 @@ class TDFlowTrainer:
             pbar.set_postfix({"loss": loss.item(), "step": self.global_step})
 
             if epoch % 5 == 0:
-                torch.save(self.fm.model.state_dict(), f'checkpoints/td2_cfm_model_{self.task}_epoch_{epoch}.pth')
-                torch.save(self.fm_target.model.state_dict(), f'checkpoints/td2_cfm_target_model_{self.task}_epoch_{epoch}.pth')
+                torch.save(self.fm.model.state_dict(), f'checkpoints/{self.loss_type}_model_{self.task}_epoch_{epoch}.pth')
+                torch.save(self.fm_target.model.state_dict(), f'checkpoints/{self.loss_type}_target_model_{self.task}_epoch_{epoch}.pth')
 
     def second_term_criterion(self, fm, target, t, x, cond):
         v = fm.velocity(t, x, cond)

@@ -13,11 +13,10 @@ from src.datasets import PointMassMazeDataset
 
 
 
-def main(task = 'reach_top_left', num_epochs=100):
+def main(task = 'reach_top_left', num_epochs=100, loss_type='td2_cfm'):
     dataset = PointMassMazeDataset(task=task)
     train_loader = DataLoader(dataset=dataset, batch_size=1024, shuffle=True)
     gamma = 0.99
-    # num_epochs = 500
     ema = 1e-3
     optimizer_config = {
         'lr':1e-4,
@@ -34,23 +33,26 @@ def main(task = 'reach_top_left', num_epochs=100):
         gamma=gamma,
         ema=ema,
         device='auto',
-        task=task
+        task=task,
+        loss_type=loss_type
     )
     try:
         trainer.fit(num_epochs)
     finally:
         wandb.finish()
-    torch.save(trainer.fm.model.state_dict(), f'checkpoints/td2_cfm_model_{task}.pth')
-    torch.save(trainer.fm.model.state_dict(), f'checkpoints/td2_cfm_target_model_{task}.pth')
+    torch.save(trainer.fm.model.state_dict(), f'checkpoints/{loss_type}_model_{task}.pth')
+    torch.save(trainer.fm_target.model.state_dict(), f'checkpoints/{loss_type}_target_model_{task}.pth')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=str, default='reach_top_left')
-    parser.add_argument('--num_epochs', type=int, default=100)    
+    parser.add_argument('--num_epochs', type=int, default=100)
+    parser.add_argument('--loss_type', type=str, default='td2_cfm')
     args = parser.parse_args()
     
     print(f"Starting training with args: {args}")
     main(
         task=args.task, 
-        num_epochs=args.num_epochs
+        num_epochs=args.num_epochs,
+        loss_type=args.loss_type
         )
