@@ -1,3 +1,4 @@
+from huggingface_hub import hf_hub_download
 import torch
 import numpy as np
 from stable_baselines3 import TD3
@@ -14,7 +15,7 @@ class PointMassMazeDataset(Dataset):
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         else:
             self.device = device
-        model_path = f'td3_point_mass_expert_{task}'
+        model_path = hf_hub_download(repo_id ="SergeiGerasimov/TDFlow", filename=f"td3_point_mass_expert_{task}.zip")
         model =  TD3.load(model_path)
         self.policy = self.configure_policy(model)
         self.file_path = file_path
