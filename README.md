@@ -82,6 +82,8 @@ This generates evaluation metrics (with standard deviations) for a task.
 
 To demonstarte that Conditional Flow Matching is implemented correctly, we provide conditioned 2D guassian mixtures  example in `conditional_flow_matching.ipynb`.
 
+More examples of Flow Matching performance can be found at https://github.com/GerasimovSergey2001/FlowMatching
+
 ## Model Storage
 
 Models' weights are stored in https://huggingface.co/SergeiGerasimov/TDFlow
